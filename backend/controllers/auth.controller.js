@@ -1,43 +1,23 @@
 import User from "../models/auth.model.js";
+import { signinService, signupService } from "../services/auth.service.js";
 import generate from "../utils/genToken.js";
 import jwt from "jsonwebtoken";
 //  signup controller:
 export const signup = async (req, res, next) => {
   try {
-    const { userName, email, password } = req.body;
-
-    // all fields are required:
-    if (!(userName && email && password)) {
+    const newUser = await signupService(req.body);
+    if (newUser.message) {
       return res.status(400).json({
-        message: "All fields are required",
+        message: newUser.message,
       });
     }
-
-    // email already exist:
-    const user = await User.findOne({ email });
-    if (user) {
-      return res.status(409).json({
-        message: "User already exist with this email",
-      });
-    }
-
-    // create user
-    const newUser = await User.create({
-      userName,
-      email,
-      password,
-    });
-
-    // remove password filed before sending:
-    const { password: pwd, ...userData } = newUser.toObject();
-
     return res
       .status(201)
       .cookie("accessToken", generate.accessToken(newUser._id), {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 1 * 60 * 60 * 1000,
+        maxAge: 1 * 24 * 60 * 60 * 1000,
       })
       .cookie("refreshToken", generate.refreshToken(newUser._id), {
         httpOnly: true,
@@ -47,7 +27,7 @@ export const signup = async (req, res, next) => {
       })
       .json({
         message: "User created successfully",
-        user: userData,
+        user: newUser,
       });
   } catch (err) {
     return res.status(500).json({
@@ -59,20 +39,13 @@ export const signup = async (req, res, next) => {
 // sign in controller:
 export const signin = async (req, res, next) => {
   try {
-    const { userName, email, password } = req.body;
-
-    // all fields are required:
-    if (!(email && password)) {
-      return res.status(400).json({
-        message: "All fields are required",
-      });
-    }
+    const { password } = req.body;
 
     //  find email:
-    const user = await User.findOne({ email });
-    if (!user) {
+    const user = await signinService(req.body);
+    if (user.message) {
       return res.status(400).json({
-        message: "Incorrect email",
+        message: user.message,
       });
     }
 
@@ -112,7 +85,6 @@ export const signin = async (req, res, next) => {
 };
 
 // refresh token controller, this controller execute when access token expired:
-
 export const refreshToken = async (req, res, next) => {
   // if token is in cookies || if token is sent in body
   const token = req.cookies.refreshToken || req.body?.refreshToken;
@@ -129,7 +101,7 @@ export const refreshToken = async (req, res, next) => {
         httpOnly: true,
         sameSite: "strict",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 1 * 60 * 60 * 1000,
+        maxAge: 1 * 24 * 60 * 60 * 1000,
       })
       .json({
         message: "Access token generate",
