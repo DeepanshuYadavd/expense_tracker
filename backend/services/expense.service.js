@@ -14,9 +14,9 @@ import {
 export const createExpenseService = async (expenseData) => {
   const { expenseName, price, category, user } = expenseData;
   if (!expenseName || !price || !category || !user) {
-    return res.status(400).json({
+    return {
       message: "All fields are required",
-    });
+    };
   }
   const existingCategory = await fetchCategoryService(category);
 

@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Category from "../models/category.model.js";
 
 export const CreateCategoryRepo = async (category) => {

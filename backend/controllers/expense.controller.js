@@ -11,6 +11,11 @@ import {
 const createExpense = async (req, res, next) => {
   try {
     const expenseApiResult = await createExpenseService(req.body);
+    if (expenseApiResult && expenseApiResult.message) {
+      return res.status(400).json({
+        message: expenseApiResult.message,
+      });
+    }
     return res.status(201).json({
       message: "Expense Created Successfully",
       data: {
